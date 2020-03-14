@@ -134,9 +134,10 @@ public class InvestorServiceTest {
 
     // When:
     Stock actualStock = localInvestorService
-        .updateAStockByInvestorIdAndStock(investorId, expectedStock);
+        .updateAStockByInvestorIdAndStock(investorId, expectedStock).orElse(null);
 
     // Then:
+    assertThat(actualStock).isNotNull();
     assertThat(expectedStock.getNumberOfSharesHeld())
         .isEqualTo(actualStock.getNumberOfSharesHeld());
     assertThat(expectedStock.getTickerPrice()).isEqualTo(actualStock.getTickerPrice());
@@ -151,7 +152,7 @@ public class InvestorServiceTest {
 
     // When:
     Stock actualStock = localInvestorService
-        .updateAStockByInvestorIdAndStock(investorId, expectedStock);
+        .updateAStockByInvestorIdAndStock(investorId, expectedStock).orElse(null);
 
     // Then:
     assertThat(actualStock).isNull();
@@ -167,7 +168,7 @@ public class InvestorServiceTest {
 
     //When:
     Stock actualStock = localInvestorService
-        .updateAStockByInvestorIdAndStock(investorId, expectedStock);
+        .updateAStockByInvestorIdAndStock(investorId, expectedStock).orElse(null);
 
     //Then:
     assertThat(actualStock).isNull();

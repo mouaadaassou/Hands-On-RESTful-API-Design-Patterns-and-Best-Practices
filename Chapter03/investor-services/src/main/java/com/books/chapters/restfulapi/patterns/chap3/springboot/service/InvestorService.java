@@ -124,18 +124,15 @@ public class InvestorService {
     return deletedStatus;
   }
 
-  public Stock updateAStockByInvestorIdAndStock(String investorId, Stock stockTobeUpdated) {
-    Investor investor = fetchInvestorById(investorId).orElse(null);
-    if (investor == null) {
-      return null;
-    }
-    Stock currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId,
-        stockTobeUpdated.getSymbol()).orElse(null);
-    if (currentStock == null) {
-      return null;
-    }
-    currentStock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld());
-    currentStock.setTickerPrice(stockTobeUpdated.getTickerPrice());
+  public Optional<Stock> updateAStockByInvestorIdAndStock(String investorId,
+      Stock stockTobeUpdated) {
+    Optional<Stock> currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId,
+        stockTobeUpdated.getSymbol());
+
+    currentStock
+        .map(stock -> stock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld()));
+
+    currentStock.map(stock -> stock.setTickerPrice(stockTobeUpdated.getTickerPrice()));
     return currentStock;
   }
 
@@ -144,22 +141,16 @@ public class InvestorService {
   // JSON, however this
   // method is not using those annotations for keeping the scope simple for
   // patching examples
-  public Stock updateAStockByInvestorIdAndStock(String investorId, String symbol,
+  public Optional<Stock> updateAStockByInvestorIdAndStock(String investorId, String symbol,
       Stock stockTobeUpdated) {
-    Investor investor = fetchInvestorById(investorId).get();
-    if (investor == null) {
-      return null;
-    }
-    Stock currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId, symbol)
-        .orElse(null);
-    if (currentStock == null) {
-      return null;
-    }
+    Optional<Stock> currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId, symbol);
+
     if (stockTobeUpdated.getNumberOfSharesHeld() > 0) {
-      currentStock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld());
+      currentStock
+          .map(stock -> stock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld()));
     }
     if (stockTobeUpdated.getTickerPrice() > 0) {
-      currentStock.setTickerPrice(stockTobeUpdated.getTickerPrice());
+      currentStock.map(stock -> stock.setTickerPrice(stockTobeUpdated.getTickerPrice()));
     }
     return currentStock;
   }
@@ -179,8 +170,8 @@ public class InvestorService {
   }
 
   private boolean isUnique(String investorId, Stock newStock) {
-    return !fetchSingleStockByInvestorIdAndStockSymbol(investorId, newStock.getSymbol())
-        .isPresent();
+    return fetchSingleStockByInvestorIdAndStockSymbol(investorId, newStock.getSymbol())
+        .isEmpty();
   }
 
   private void updateIndividualInvestorPortfolio(UpdateIndividualInvestorPortfolio portfolioOp) {
