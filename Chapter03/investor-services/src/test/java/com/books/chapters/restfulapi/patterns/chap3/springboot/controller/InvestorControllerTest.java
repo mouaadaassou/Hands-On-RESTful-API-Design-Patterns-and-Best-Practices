@@ -17,7 +17,7 @@ import com.books.chapters.restfulapi.patterns.chap3.springboot.controller.Invest
 import com.books.chapters.restfulapi.patterns.chap3.springboot.service.InvestorService;
 
 @RunWith(SpringRunner.class)
-@WebMvcTest(value = InvestorController.class, secure = false)
+@WebMvcTest(value = InvestorController.class)
 public class InvestorControllerTest {
 
 	@Autowired

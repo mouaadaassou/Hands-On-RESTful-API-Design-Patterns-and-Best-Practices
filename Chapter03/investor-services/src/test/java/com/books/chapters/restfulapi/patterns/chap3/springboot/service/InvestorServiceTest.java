@@ -1,136 +1,199 @@
 package com.books.chapters.restfulapi.patterns.chap3.springboot.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNull;
 
 import com.books.chapters.restfulapi.patterns.chap3.springboot.models.Investor;
 import com.books.chapters.restfulapi.patterns.chap3.springboot.models.Stock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.junit.Test;
 
-import junit.framework.TestCase;
+public class InvestorServiceTest {
 
-public class InvestorServiceTest extends TestCase {
+  @Test
+  public void testFetchAllInvestors() {
+    int expectedSize = 2;
 
-	@Override
-	protected void setUp() throws Exception {
+    // When:
+    int actualListSize = getInvestorServiceForTest().fetchAllInvestors().size();
 
-	}
+    // Then:
+    assertThat(actualListSize).isEqualTo(expectedSize);
+  }
 
-	@Test
-	public void testFetchAllInvestors() {
-		int expectedSize = 2;
-		int actualListSize = getInvestorServiceForTest().fetchAllInvestors().size();
-		assertEquals(expectedSize, actualListSize);
-	}
 
-	@Test
-	public void testFetchInvestorById() {
-		Investor actualInvestor = getInvestorServiceForTest().fetchInvestorById("invr_1");
-		Investor expectedInvestor = new Investor("INVR_1", "Investor ONE", "conservative investor", getStocksSetOne());
-		assertEquals(actualInvestor.getId(), expectedInvestor.getId());
-		actualInvestor = getInvestorServiceForTest().fetchInvestorById("invr_2");
-		expectedInvestor = new Investor("INVR_2", "Investor TWO", "Moderate Risk investor", getStocksSetTwo());
-		assertEquals(expectedInvestor.getId(), actualInvestor.getId());
+  @Test
+  public void testFetchInvestorById() {
+    // Given:
+    Investor expectedInvestor = new Investor("INVR_1", "Investor ONE", "conservative investor",
+        getStocksSetOne());
 
-	}
+    // When:
+    Investor actualInvestor = getInvestorServiceForTest().fetchInvestorById("invr_1").orElse(null);
 
-	@Test
-	public void testFetchStocksByInvestorId() {
-		Investor expectedInvestor = getInvestorServiceForTest().fetchInvestorById("invr_1");
-		String expectedStockSymbol = "EXB";
-		assertEquals(expectedInvestor.getStocks().size(), 4);
-		Stock expectedStock = expectedInvestor.getStocks().stream()
-				.filter(stock -> expectedStockSymbol.equalsIgnoreCase(stock.getSymbol())).findAny().orElse(null);
-		assertNotNull(expectedStock);
+    // Then:
+    assertThat(actualInvestor).isNotNull();
+    assertThat(actualInvestor.getId()).isEqualTo(expectedInvestor.getId());
 
-	}
+  }
 
-	@Test
-	public void testFetchSingleStockByInvestorIdAndStockSymbol() {
-		String investorId = "Invr_1";
-		String expectedSymbol = "EXA";
-		String actualSymbol = (getInvestorServiceForTest()
-				.fetchSingleStockByInvestorIdAndStockSymbol(investorId, expectedSymbol).getSymbol());
-		assertEquals(expectedSymbol, actualSymbol);
-	}
 
-	@Test
-	public void testAddNewStocksToTheInvestorPortfolio() {
-		Stock actualStock = new Stock("EXe", 150, 18.5);
-		InvestorService localInvestorService = getInvestorServiceForTest();
-		localInvestorService.addNewStockToTheInvestorPortfolio("invr_1", actualStock);
-		Stock expectedStock = localInvestorService.fetchSingleStockByInvestorIdAndStockSymbol("invr_1", "EXe");
-		assertEquals(expectedStock.getSymbol(), actualStock.getSymbol());
-	}
+  @Test
+  public void testFetchStocksByInvestorId() {
+    // Given:
+    Investor expectedInvestor = getInvestorServiceForTest().fetchInvestorById("invr_1")
+        .orElse(null);
+    String expectedStockSymbol = "EXB";
 
-	@Test
-	public void testAddNewStocksToTheInvestorPortfolioFailsWhenTryInsertingDuplicate() {
-		String investorId = "invr_1";
-		String actualStockSymbol = "EXe";
-		Stock actualStock = new Stock(actualStockSymbol, 150, 18.5);
-		InvestorService localInvestorService = getInvestorServiceForTest();
-		assertNotNull(localInvestorService.addNewStockToTheInvestorPortfolio(investorId, actualStock));
-		assertNull(localInvestorService.addNewStockToTheInvestorPortfolio(investorId, actualStock));
-	}
+    // When:
+    Stock expectedStock = Objects.requireNonNull(expectedInvestor).getStocks().stream()
+        .filter(stock -> expectedStockSymbol.equalsIgnoreCase(stock.getSymbol()))
+        .findAny()
+        .orElse(null);
 
-	@Test
-	public void testDeleteAStockToTheInvestorPortfolio() {
-		Stock actualStock = new Stock("EXA", 150, 18.5);
-		InvestorService localInvestorService = getInvestorServiceForTest();
-		localInvestorService.deleteStockFromTheInvestorPortfolio("invr_1", actualStock.getSymbol());
-		Stock expectedStock = localInvestorService.fetchSingleStockByInvestorIdAndStockSymbol("invr_1", "EXa");
-		assertNull(expectedStock);
-	}
+    // Then:
+    assertThat(expectedStock).isNotNull();
+    assertThat(expectedInvestor.getStocks().size()).isEqualTo(4);
+  }
 
-	@Test
-	public void testUpdateAStockByInvestorId() {
-		Stock expectedStock = new Stock("EXA", 150, 18.5);
-		InvestorService localInvestorService = getInvestorServiceForTest();
-		String investorId = "invr_1";
-		Stock actualStock = localInvestorService.updateAStockByInvestorIdAndStock(investorId, expectedStock);
-		assertEquals(expectedStock.getNumberOfSharesHeld(), actualStock.getNumberOfSharesHeld());
-		assertEquals(expectedStock.getTickerPrice(), actualStock.getTickerPrice());
-	}
-	
-	@Test
-	public void testUpdateAStockByInvestorIdWhenInvestorIdNotFound() {
-		Stock expectedStock = new Stock("EXA", 150, 18.5);
-		InvestorService localInvestorService = getInvestorServiceForTest();
-		String investorId = "invr_not_found";
-		Stock actualStock = localInvestorService.updateAStockByInvestorIdAndStock(investorId, expectedStock);
-		assertNull(actualStock);
-	}
-	@Test
-	public void testUpdateAStockByInvestorIdWhenStockSymbolNotFound() {
-		Stock expectedStock = new Stock("not_found", 150, 18.5);
-		InvestorService localInvestorService = getInvestorServiceForTest();
-		String investorId = "invr_1";
-		Stock actualStock = localInvestorService.updateAStockByInvestorIdAndStock(investorId, expectedStock);
-		assertNull(actualStock);
-	}
-	
-	private InvestorService getInvestorServiceForTest() {
-		return new InvestorService();
-	}
+  @Test
+  public void testFetchSingleStockByInvestorIdAndStockSymbol() {
+    // Given:
+    String investorId = "Invr_1";
+    String expectedSymbol = "EXA";
 
-	private List<Stock> getStocksSetOne() {
-		ArrayList<Stock> stocksLotOne = new ArrayList<>();
-		Stock stocksSampleOne = new Stock("EXA", 200, 20);
-		Stock stocksSampleTwo = new Stock("EXB", 100, 60);
+    // When:
+    String actualSymbol = getInvestorServiceForTest()
+        .fetchSingleStockByInvestorIdAndStockSymbol(investorId, expectedSymbol)
+        .map(Stock::getSymbol).orElse(null);
 
-		stocksLotOne.add(stocksSampleTwo);
-		stocksLotOne.add(stocksSampleOne);
-		return stocksLotOne;
-	}
+    // Then:
+    assertThat(actualSymbol).isNotNull();
+    assertThat(expectedSymbol).isEqualTo(actualSymbol);
+  }
 
-	private List<Stock> getStocksSetTwo() {
-		ArrayList<Stock> stocksLotTwo = new ArrayList<>();
-		Stock stocksSampleThree = new Stock("EXC", 300, 200);
-		Stock stocksSampleFour = new Stock("EXD", 150, 40);
 
-		stocksLotTwo.add(stocksSampleThree);
-		stocksLotTwo.add(stocksSampleFour);
-		return stocksLotTwo;
-	}
+  @Test
+  public void testAddNewStocksToTheInvestorPortfolio() {
+    // Given:
+    Stock actualStock = new Stock("EXe", 150, 18.5);
+    InvestorService localInvestorService = getInvestorServiceForTest();
+
+    // When:
+    localInvestorService.addNewStockToTheInvestorPortfolio("invr_1", actualStock);
+    Stock expectedStock = localInvestorService
+        .fetchSingleStockByInvestorIdAndStockSymbol("invr_1", "EXe").orElse(null);
+
+    // Then:
+    assertThat(expectedStock).isNotNull();
+    assertThat(expectedStock.getSymbol()).isEqualTo(actualStock.getSymbol());
+  }
+
+  @Test
+  public void testAddNewStocksToTheInvestorPortfolioFailsWhenTryInsertingDuplicate() {
+    // Given:
+    String investorId = "invr_1";
+    String actualStockSymbol = "EXe";
+    Stock actualStock = new Stock(actualStockSymbol, 150, 18.5);
+    InvestorService localInvestorService = getInvestorServiceForTest();
+
+    // when:
+    Stock addedStock = localInvestorService
+        .addNewStockToTheInvestorPortfolio(investorId, actualStock).orElse(null);
+    Stock secondAddedStock = localInvestorService
+        .addNewStockToTheInvestorPortfolio(investorId, actualStock).orElse(null);
+
+    // Then:
+    assertThat(addedStock).isNotNull();
+    assertThat(secondAddedStock).isNull();
+  }
+
+  @Test
+  public void testDeleteAStockToTheInvestorPortfolio() {
+    // Given:
+    Stock actualStock = new Stock("EXA", 150, 18.5);
+    InvestorService localInvestorService = getInvestorServiceForTest();
+
+    // When:
+    localInvestorService.deleteStockFromTheInvestorPortfolio("invr_1", actualStock.getSymbol());
+    Stock expectedStock = localInvestorService
+        .fetchSingleStockByInvestorIdAndStockSymbol("invr_1", "EXa").orElse(null);
+
+    // Then:
+    assertNull(expectedStock);
+  }
+
+  @Test
+  public void testUpdateAStockByInvestorId() {
+    // Given:
+    Stock expectedStock = new Stock("EXA", 150, 18.5);
+    InvestorService localInvestorService = getInvestorServiceForTest();
+    String investorId = "invr_1";
+
+    // When:
+    Stock actualStock = localInvestorService
+        .updateAStockByInvestorIdAndStock(investorId, expectedStock);
+
+    // Then:
+    assertThat(expectedStock.getNumberOfSharesHeld())
+        .isEqualTo(actualStock.getNumberOfSharesHeld());
+    assertThat(expectedStock.getTickerPrice()).isEqualTo(actualStock.getTickerPrice());
+  }
+
+  @Test
+  public void testUpdateAStockByInvestorIdWhenInvestorIdNotFound() {
+    // Given:
+    Stock expectedStock = new Stock("EXA", 150, 18.5);
+    InvestorService localInvestorService = getInvestorServiceForTest();
+    String investorId = "invr_not_found";
+
+    // When:
+    Stock actualStock = localInvestorService
+        .updateAStockByInvestorIdAndStock(investorId, expectedStock);
+
+    // Then:
+    assertThat(actualStock).isNull();
+  }
+
+
+  @Test
+  public void testUpdateAStockByInvestorIdWhenStockSymbolNotFound() {
+    // Given:
+    Stock expectedStock = new Stock("not_found", 150, 18.5);
+    InvestorService localInvestorService = getInvestorServiceForTest();
+    String investorId = "invr_1";
+
+    //When:
+    Stock actualStock = localInvestorService
+        .updateAStockByInvestorIdAndStock(investorId, expectedStock);
+
+    //Then:
+    assertThat(actualStock).isNull();
+  }
+
+  private InvestorService getInvestorServiceForTest() {
+    return new InvestorService();
+  }
+
+  private List<Stock> getStocksSetOne() {
+    ArrayList<Stock> stocksLotOne = new ArrayList<>();
+    Stock stocksSampleOne = new Stock("EXA", 200, 20);
+    Stock stocksSampleTwo = new Stock("EXB", 100, 60);
+
+    stocksLotOne.add(stocksSampleTwo);
+    stocksLotOne.add(stocksSampleOne);
+    return stocksLotOne;
+  }
+
+  private List<Stock> getStocksSetTwo() {
+    ArrayList<Stock> stocksLotTwo = new ArrayList<>();
+    Stock stocksSampleThree = new Stock("EXC", 300, 200);
+    Stock stocksSampleFour = new Stock("EXD", 150, 40);
+
+    stocksLotTwo.add(stocksSampleThree);
+    stocksLotTwo.add(stocksSampleFour);
+    return stocksLotTwo;
+  }
 }

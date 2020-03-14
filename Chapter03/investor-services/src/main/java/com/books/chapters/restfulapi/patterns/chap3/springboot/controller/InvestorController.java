@@ -42,7 +42,7 @@ public class InvestorController {
 	
 	@GetMapping("/investors/{investorId}")
 	public Investor fetchInvestorById(@PathVariable String investorId) {
-		Investor resultantInvestor = investorService.fetchInvestorById(investorId);
+		Investor resultantInvestor = investorService.fetchInvestorById(investorId).get();
 		if (resultantInvestor == null) {
 			throw new InvestorNotFoundException("Investor Id-" + investorId);
 		}
@@ -64,13 +64,13 @@ public class InvestorController {
 	@GetMapping(path = "/investors/{investorId}/stocks/{symbol}", produces = { MediaType.APPLICATION_JSON_VALUE,
 			MediaType.APPLICATION_XML_VALUE })
 	public Stock fetchAStockByInvestorIdAndStockId(@PathVariable String investorId, @PathVariable String symbol) {
-		return investorService.fetchSingleStockByInvestorIdAndStockSymbol(investorId, symbol);
+		return investorService.fetchSingleStockByInvestorIdAndStockSymbol(investorId, symbol).orElse(null);
 	}
 
 	@PostMapping("/investors/{investorId}/stocks")
 	public ResponseEntity<Void> addNewStockToTheInvestorPortfolio(@PathVariable String investorId,
 			@RequestBody Stock newStock) {
-		Stock insertedStock = investorService.addNewStockToTheInvestorPortfolio(investorId, newStock);
+		Stock insertedStock = investorService.addNewStockToTheInvestorPortfolio(investorId, newStock).orElse(null);
 		if (insertedStock == null) {
 			return ResponseEntity.noContent().build();
 		}

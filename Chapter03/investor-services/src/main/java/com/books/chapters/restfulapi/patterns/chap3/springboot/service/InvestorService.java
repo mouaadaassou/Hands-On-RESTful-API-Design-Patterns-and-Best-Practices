@@ -1,187 +1,211 @@
 package com.books.chapters.restfulapi.patterns.chap3.springboot.service;
 
+import com.books.chapters.restfulapi.patterns.chap3.springboot.models.IndividualInvestorPortfolio;
+import com.books.chapters.restfulapi.patterns.chap3.springboot.models.Investor;
+import com.books.chapters.restfulapi.patterns.chap3.springboot.models.Stock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.books.chapters.restfulapi.patterns.chap3.springboot.models.IndividualInvestorPortfolio;
-import com.books.chapters.restfulapi.patterns.chap3.springboot.models.Investor;
-import com.books.chapters.restfulapi.patterns.chap3.springboot.models.Stock;
-
 @Component
 public class InvestorService {
 
-	private static final int OPERATION_ADD = 1;
-	private static final int OPERATION_DELETE = 2;
-	private static List<Investor> investorsList = new ArrayList<>();
-	private static Map<String, IndividualInvestorPortfolio> portfoliosMap = new HashMap<>();
+  private static final int OPERATION_ADD = 1;
+  private static final int OPERATION_DELETE = 2;
+  private static List<Investor> investorsList = new ArrayList<>();
+  private static Map<String, IndividualInvestorPortfolio> portfoliosMap = new HashMap<>();
 
-	private static final Logger logger = LoggerFactory.getLogger(InvestorService.class);
+  private static final Logger logger = LoggerFactory.getLogger(InvestorService.class);
 
-	static {
-		// create some data
-		Stock stocksSampleOne = new Stock("EXA", 200, 20);
-		Stock stocksSampleTwo = new Stock("EXB", 100, 60);
+  static {
+    // create some data
+    Stock stocksSampleOne = new Stock("EXA", 200, 20);
+    Stock stocksSampleTwo = new Stock("EXB", 100, 60);
 
-		Stock stocksSampleThree = new Stock("EXC", 300, 200);
-		Stock stocksSampleFour = new Stock("EXD", 150, 40);
+    Stock stocksSampleThree = new Stock("EXC", 300, 200);
+    Stock stocksSampleFour = new Stock("EXD", 150, 40);
 
-		Stock stockSampleFive = new Stock("EX5", 200, 20);
-		Stock stockSampleSix = new Stock("EX6", 200, 20);
+    Stock stockSampleFive = new Stock("EX5", 200, 20);
+    Stock stockSampleSix = new Stock("EX6", 200, 20);
 
-		ArrayList<Stock> stocksLotOne = new ArrayList<>();
-		stocksLotOne.add(stocksSampleOne);
-		stocksLotOne.add(stocksSampleTwo);
-		stocksLotOne.add(stockSampleFive);
-		stocksLotOne.add(stockSampleSix);
-		ArrayList<Stock> stocksLotTwo = new ArrayList<>();
-		stocksLotTwo.add(stocksSampleThree);
-		stocksLotTwo.add(stocksSampleFour);
-		stocksLotTwo.add(stockSampleFive);
-		stocksLotTwo.add(stockSampleSix);
+    ArrayList<Stock> stocksLotOne = new ArrayList<>();
+    stocksLotOne.add(stocksSampleOne);
+    stocksLotOne.add(stocksSampleTwo);
+    stocksLotOne.add(stockSampleFive);
+    stocksLotOne.add(stockSampleSix);
+    ArrayList<Stock> stocksLotTwo = new ArrayList<>();
+    stocksLotTwo.add(stocksSampleThree);
+    stocksLotTwo.add(stocksSampleFour);
+    stocksLotTwo.add(stockSampleFive);
+    stocksLotTwo.add(stockSampleSix);
 
-		Investor investorOne = new Investor("INVR_1", "Investor ONE", "conservative investor", stocksLotOne);
-		Investor investorTwo = new Investor("INVR_2", "Investor TWO", "Moderate Risk investor", stocksLotTwo);
+    Investor investorOne = new Investor("INVR_1", "Investor ONE", "conservative investor",
+        stocksLotOne);
+    Investor investorTwo = new Investor("INVR_2", "Investor TWO", "Moderate Risk investor",
+        stocksLotTwo);
 
-		investorsList.add(investorOne);
-		investorsList.add(investorTwo);
+    investorsList.add(investorOne);
+    investorsList.add(investorTwo);
 
-		// Design for Intent example
-		// get the portfolio of individual investor updated
-		IndividualInvestorPortfolio portfolioOfInvestorOne = updateInvestorPortfolioByInvestorId(investorOne);
-		IndividualInvestorPortfolio portfolioOfInvestorTwo = updateInvestorPortfolioByInvestorId(investorTwo);
-		portfoliosMap.put(investorOne.getId(), portfolioOfInvestorOne);
-		portfoliosMap.put(investorTwo.getId(), portfolioOfInvestorTwo);
-	}
+    // Design for Intent example
+    // get the portfolio of individual investor updated
+    IndividualInvestorPortfolio portfolioOfInvestorOne = updateInvestorPortfolioByInvestorId(
+        investorOne);
+    IndividualInvestorPortfolio portfolioOfInvestorTwo = updateInvestorPortfolioByInvestorId(
+        investorTwo);
+    portfoliosMap.put(investorOne.getId(), portfolioOfInvestorOne);
+    portfoliosMap.put(investorTwo.getId(), portfolioOfInvestorTwo);
+  }
 
-	public List<Investor> fetchAllInvestors() {
-		return investorsList;
-	}
+  public List<Investor> fetchAllInvestors() {
+    return investorsList;
+  }
 
-	public Investor fetchInvestorById(String investorId) {
-		return investorsList.stream().filter(investors -> investorId.equalsIgnoreCase(investors.getId())).findAny()
-				.orElse(null);
+  public Optional<Investor> fetchInvestorById(String investorId) {
+    return investorsList.stream()
+        .filter(investors -> investorId.equalsIgnoreCase(investors.getId()))
+        .findAny();
+  }
 
-	}
+  public List<Stock> fetchStocksByInvestorId(String investorId, int offset, int limit) {
+    return fetchInvestorById(investorId)
+        .map(inv -> inv.getStocks()
+            .subList(getStartFrom(offset, inv), getToIndex(offset, limit, inv)))
+        .orElse(List.of());
+  }
 
-	public List<Stock> fetchStocksByInvestorId(String investorId, int offset, int limit) {
-		Investor investor = fetchInvestorById(investorId);
-		return investor.getStocks().subList(getStartFrom(offset, investor), getToIndex(offset, limit, investor));
-	}
+  private int getToIndex(int offset, int limit, Investor investor) {
+    int toIndex = offset + limit;
+    return Math.min((toIndex), investor.getStocks().size());
+  }
 
-	private int getToIndex(int offset, int limit, Investor investor) {
-		int toIndex = offset + limit;
-		return (toIndex) > investor.getStocks().size() ? investor.getStocks().size() : toIndex;
-	}
+  private int getStartFrom(int offset, Investor investor) {
+    return Math.min((offset), investor.getStocks().size());
+  }
 
-	private int getStartFrom(int offset, Investor investor) {
-		return (offset) >= investor.getStocks().size() ? investor.getStocks().size() : offset;
-	}
+  public Optional<Stock> fetchSingleStockByInvestorIdAndStockSymbol(String investorId,
+      String symbol) {
+    return fetchInvestorById(investorId).flatMap(
+        investor -> investor.getStocks().stream()
+            .filter(stock -> symbol.equalsIgnoreCase(stock.getSymbol()))
+            .findAny());
+  }
 
-	public Stock fetchSingleStockByInvestorIdAndStockSymbol(String investorId, String symbol) {
-		Investor investor = fetchInvestorById(investorId);
-		return investor.getStocks().stream().filter(stock -> symbol.equalsIgnoreCase(stock.getSymbol())).findAny()
-				.orElse(null);
-	}
+  public Optional<Stock> addNewStockToTheInvestorPortfolio(String investorId, Stock newStock) {
+    Optional<Stock> addedStockToTheInvestorPortfolio = Optional.empty();
+    if (isPreConditionSuccess(investorId, newStock) && isNewStockInsertSuccess(investorId,
+        newStock)) {
+      designForIntentCascadePortfolioAdd(investorId);
+      addedStockToTheInvestorPortfolio = fetchSingleStockByInvestorIdAndStockSymbol(investorId,
+          newStock.getSymbol());
+    }
+    return addedStockToTheInvestorPortfolio;
+  }
 
-	public Stock addNewStockToTheInvestorPortfolio(String investorId, Stock newStock) {
-		if (isPreConditionSuccess(investorId, newStock) && isNewStockInsertSucess(investorId, newStock)) {
-			designForIntentCascadePortfolioAdd(investorId);
-			return fetchSingleStockByInvestorIdAndStockSymbol(investorId, newStock.getSymbol());
-		}
-		return null;
-	}
+  public boolean deleteStockFromTheInvestorPortfolio(String investorId,
+      String stockTobeDeletedSymbol) {
+    Stock stockTobeDeleted = fetchSingleStockByInvestorIdAndStockSymbol(investorId,
+        stockTobeDeletedSymbol).orElse(null);
 
-	public boolean deleteStockFromTheInvestorPortfolio(String investorId, String stockTobeDeletedSymbol) {
-		boolean deletedStatus = false;
-		Stock stockTobeDeleted = fetchSingleStockByInvestorIdAndStockSymbol(investorId, stockTobeDeletedSymbol);
-		if (stockTobeDeleted != null) {
-			Investor investor = fetchInvestorById(investorId);
-			deletedStatus = investor.getStocks().remove(stockTobeDeleted);
-		}
-		designForIntentCascadePortfolioDelete(investorId, deletedStatus);
-		return deletedStatus;
-	}
+    boolean deletedStatus = fetchSingleStockByInvestorIdAndStockSymbol(investorId,
+        stockTobeDeletedSymbol)
+        .filter(Objects::nonNull)
+        .flatMap(stock -> fetchInvestorById(investorId)
+            .map(investor -> investor.getStocks().remove(stockTobeDeleted)))
+        .orElse(false);
 
-	public Stock updateAStockByInvestorIdAndStock(String investorId, Stock stockTobeUpdated) {
-		Investor investor = fetchInvestorById(investorId);
-		if (investor == null) {
-			return null;
-		}
-		Stock currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId, stockTobeUpdated.getSymbol());
-		if (currentStock == null) {
-			return null;
-		}
-		currentStock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld());
-		currentStock.setTickerPrice(stockTobeUpdated.getTickerPrice());
-		return currentStock;
-	}
+    designForIntentCascadePortfolioDelete(investorId, deletedStatus);
+    return deletedStatus;
+  }
 
-	// slight variance of updateAStockByInvestorIdAndStock for PATCH method
-	// please note that spring boot provides annotations based validations for
-	// JSON, however this
-	// method is not using those annotations for keeping the scope simple for
-	// patching examples
-	public Stock updateAStockByInvestorIdAndStock(String investorId, String symbol, Stock stockTobeUpdated) {
-		Investor investor = fetchInvestorById(investorId);
-		if (investor == null) {
-			return null;
-		}
-		Stock currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId, symbol);
-		if (currentStock == null) {
-			return null;
-		}
-		if (stockTobeUpdated.getNumberOfSharesHeld() > 0) {
-			currentStock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld());
-		}
-		if (stockTobeUpdated.getTickerPrice() > 0) {
-			currentStock.setTickerPrice(stockTobeUpdated.getTickerPrice());
-		}
-		return currentStock;
-	}
+  public Stock updateAStockByInvestorIdAndStock(String investorId, Stock stockTobeUpdated) {
+    Investor investor = fetchInvestorById(investorId).orElse(null);
+    if (investor == null) {
+      return null;
+    }
+    Stock currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId,
+        stockTobeUpdated.getSymbol()).orElse(null);
+    if (currentStock == null) {
+      return null;
+    }
+    currentStock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld());
+    currentStock.setTickerPrice(stockTobeUpdated.getTickerPrice());
+    return currentStock;
+  }
 
-	private static IndividualInvestorPortfolio updateInvestorPortfolioByInvestorId(Investor investor) {
-		return new IndividualInvestorPortfolio(investor.getId(), investor.getStocks().size());
+  // slight variance of updateAStockByInvestorIdAndStock for PATCH method
+  // please note that spring boot provides annotations based validations for
+  // JSON, however this
+  // method is not using those annotations for keeping the scope simple for
+  // patching examples
+  public Stock updateAStockByInvestorIdAndStock(String investorId, String symbol,
+      Stock stockTobeUpdated) {
+    Investor investor = fetchInvestorById(investorId).get();
+    if (investor == null) {
+      return null;
+    }
+    Stock currentStock = fetchSingleStockByInvestorIdAndStockSymbol(investorId, symbol)
+        .orElse(null);
+    if (currentStock == null) {
+      return null;
+    }
+    if (stockTobeUpdated.getNumberOfSharesHeld() > 0) {
+      currentStock.setNumberOfSharesHeld(stockTobeUpdated.getNumberOfSharesHeld());
+    }
+    if (stockTobeUpdated.getTickerPrice() > 0) {
+      currentStock.setTickerPrice(stockTobeUpdated.getTickerPrice());
+    }
+    return currentStock;
+  }
 
-	}
+  private static IndividualInvestorPortfolio updateInvestorPortfolioByInvestorId(
+      Investor investor) {
+    return new IndividualInvestorPortfolio(investor.getId(), investor.getStocks().size());
+  }
 
-	private boolean isPreConditionSuccess(String investorId, Stock newStock) {
-		return fetchInvestorById(investorId) != null && isUnique(investorId, newStock);
-	}
+  private boolean isPreConditionSuccess(String investorId, Stock newStock) {
+    return fetchInvestorById(investorId).isPresent() && isUnique(investorId, newStock);
+  }
 
-	private boolean isNewStockInsertSucess(String investorId, Stock newStock) {
-		return fetchInvestorById(investorId).getStocks().add(newStock);
-	}
+  private boolean isNewStockInsertSuccess(String investorId, Stock newStock) {
+    ;
+    return fetchInvestorById(investorId).map(investor -> investor.getStocks().add(newStock)).get();
+  }
 
-	private boolean isUnique(String investorId, Stock newStock) {
-		return fetchSingleStockByInvestorIdAndStockSymbol(investorId, newStock.getSymbol()) == null;
-	}
+  private boolean isUnique(String investorId, Stock newStock) {
+    return !fetchSingleStockByInvestorIdAndStockSymbol(investorId, newStock.getSymbol())
+        .isPresent();
+  }
 
-	private void updateIndividualInvestorPortfolio(String investorId, int operation) {
-		IndividualInvestorPortfolio individualInvestorPortfolio = portfoliosMap
-				.get(fetchInvestorById(investorId).getId());
-		if (operation == OPERATION_ADD) {
-			individualInvestorPortfolio.setStocksHoldCount(individualInvestorPortfolio.getStocksHoldCount() + 1);
-			logger.info("updated the portfolio for ADD stocks operation");
-		} else if (operation == OPERATION_DELETE) {
-			individualInvestorPortfolio.setStocksHoldCount(individualInvestorPortfolio.getStocksHoldCount() - 1);
-			logger.info("updated the portfolio for Delete stocks operation");
-		}
+  private void updateIndividualInvestorPortfolio(UpdateIndividualInvestorPortfolio portfolioOp) {
+    portfolioOp.updateIndividualInvestorPortfolio();
+  }
 
-	}
+  private void designForIntentCascadePortfolioAdd(String investorId) {
+    IndividualInvestorPortfolio individualInvestorPortfolio = portfoliosMap
+        .get(fetchInvestorById(investorId).map(Investor::getId).orElse(null));
 
-	private void designForIntentCascadePortfolioAdd(String investorId) {
-		updateIndividualInvestorPortfolio(investorId, OPERATION_ADD);
-	}
+    updateIndividualInvestorPortfolio(() -> {
+      individualInvestorPortfolio
+          .setStocksHoldCount(individualInvestorPortfolio.getStocksHoldCount() + 1);
+    });
+  }
 
-	private void designForIntentCascadePortfolioDelete(String investorId, boolean deletedStatus) {
-		if (deletedStatus) {
-			updateIndividualInvestorPortfolio(investorId, OPERATION_DELETE);
-		}
-	}
+  private void designForIntentCascadePortfolioDelete(String investorId, boolean deletedStatus) {
+    if (deletedStatus) {
+      IndividualInvestorPortfolio individualInvestorPortfolio = portfoliosMap
+          .get(fetchInvestorById(investorId).map(Investor::getId).orElse(null));
+
+      updateIndividualInvestorPortfolio(() -> {
+        individualInvestorPortfolio
+            .setStocksHoldCount(individualInvestorPortfolio.getStocksHoldCount() - 1);
+      });
+    }
+  }
 }
